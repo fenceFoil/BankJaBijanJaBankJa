@@ -132,7 +132,7 @@
                     },
 
                     async init() {
-                        this.$router.config({ mode: 'hash', base: '/' });
+                        this.$router.config({ mode: 'hash', base: '/banking/' });
                         this.bankingData = (await pb.collection('banking_data').getFirstListItem('',{sort: '-created'})).currData;
 
                         //this.$watch('$router.path', val => {console.log(`Navigating to: ${val}`);this.loadPage(val)});
