@@ -1,0 +1,45 @@
+<section id="mainSection">
+    <style>
+        #mainSection {
+            flex: 1;
+
+            display: flex;
+            flex-direction: column;
+        }
+
+        .bankingDataWrapper {
+            display: grid;
+            flex: 1;
+            place-items: center;
+            margin-block: 1.5em;
+        }
+
+        #bankingData {
+            font-family: monospace;
+            padding: 0.5em;
+            color: white;
+            background-color: navy;
+
+            width: 100%;
+            height: 100%;
+            resize: none;
+            
+            max-width: 50ch;
+        }
+
+        #logInEditMessage {
+            font-style: italic;
+            text-align: center;
+            margin-top: 1.5em;
+        }
+    </style>
+
+    <template x-if="!loggedIn">
+        <div id="logInEditMessage">
+            Log in to do banking
+        </div>
+    </template>
+    <div class="bankingDataWrapper">
+        <textarea :readonly="!loggedIn" name="bankingData" id="bankingData" spellcheck="false" x-model="bankingData" @input.debounce="updateBankingData()"></textarea>
+    </div>
+</section>

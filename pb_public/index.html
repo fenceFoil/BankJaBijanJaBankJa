@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>💰 BankJaBijanJaBankJa</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <link rel="stylesheet" href="joshreset.css">
+
+    <style>
+        body {
+            background-color: black;
+            color: black;
+            font-family: serif;
+            font-size: normal;
+            display: flex; flex-direction: column; align-items: left;
+            position: relative;
+            height: 100dvh;
+            max-width: 100dvw;
+            background-image: url(bg.jpg);
+            background-repeat: repeat;
+            background-size: 30dvh;
+            user-select: none;
+            overflow-x: hidden;
+        }
+
+        @media (min-width: 800px) {
+            body {
+                font-size: xx-large;
+            }
+        }
+
+        nav {
+            background-color: navy;
+            color: lightyellow;
+
+            display: flex;
+            align-items: center;
+
+            * {
+                margin-inline: 1em;
+            }
+        }
+
+        a.lightLink {
+            color: lightyellow;
+            text-decoration: none;
+        }
+
+        .logoWrapper {
+            display: grid;
+            place-items: center;
+            padding-block: 1em;
+            background-image: url(bijan.webp);
+            background-position: center top;
+            background-size: cover;
+        }
+        
+        .logo {
+            display: grid;
+            place-items: center;
+            background-color: #00008088;
+            color: lightyellow;
+            text-decoration: none;
+            padding: 0.7em;
+        }
+    </style>
+</head>
+
+<body x-data="d">
+    <script src="anime.min.js"></script>
+    <script src="howler.min.js"></script> <!--// spinner ticker noise-->
+    <script src="pocketbase.umd.js"></script>
+    <script src="js-confetti.min.js"></script>
+    <script defer src="alpinejs-router.1.3.1.min.js"></script>
+    <script defer src="alpine.3.13.2.min.js"></script>
+    <script src="chance.min.js"></script>
+
+    <nav>
+        <a href="#" style="text-decoration: none;">🐠</a>
+        <div style="flex: 1; text-align: center;font-family: monospace;">
+            <template x-if="(securityTimer >= 0) && (securityTimer <= 15)">
+                <span>Login Security Timer: <span style="color: red">0:<span x-text="securityTimerWithLeadingZero"></span></span></span>
+            </template>
+            <template x-if="showLoggedOutMessage">
+                <span style="font-family: monospace;">Logged Out For Your Security</span>
+            </template>
+        </div>
+        <template x-if="!loggedIn">
+            <a class="lightLink" href="#/login" style="border-radius: 0.75em;border: 2px solid white;padding-inline: 1em;margin: 0.2em;">Log In</a>
+        </template>
+        <template x-if="loggedIn">
+            <a class="lightLink" @click="securityTimer = -1; loggedIn = false;" style="border-radius: 0.75em;border: 2px solid white;padding-inline: 1em;margin: 0.2em;">Log Out</a>
+        </template>
+    </nav>
+
+    <div class="logoWrapper">
+        <a class="logo" href="#">🐠 BankJaBijanJaBankJa</a>
+    </div>
+
+    <template x-route="" template="screen-main.html"></template>
+    <template x-route="/login" template="screen-login.html"></template>
+    <template x-route="/whoops" template="screen-gnome.html"></template>
+    <template x-route.notfound>
+        <div style="height: 5em;display: grid;place-items: center;">
+            Page not found.<br><br><a href="#">Home</a>
+        </div>
+    </template>
+
+    <script>
+        var pbBaseUrl = 'https://pb.billkarnavas.com'
+        var pb = new PocketBase(pbBaseUrl)
+
+        const jsConfetti = new JSConfetti()
+
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('d', function() {
+                return {
+                    loggedIn: false,
+                    showLoggedOutMessage: false,
+                    bankingData: '',
+                    wheelSpinning: false,
+                    showTryAgain: false,
+                    securityTimer: -100,
+
+                    securityTimerWithLeadingZero() {
+                        if (this.securityTimer >= 10) {
+                            return this.securityTimer;
+                        } else {
+                            return '0' + this.securityTimer;
+                        }
+                    },
+
+                    async init() {
+                        this.$router.config({ mode: 'hash', base: '/' });
+                        this.bankingData = (await pb.collection('banking_data').getFirstListItem('',{sort: '-created'})).currData;
+
+                        //this.$watch('$router.path', val => {console.log(`Navigating to: ${val}`);this.loadPage(val)});
+
+                        /*this.nowherePlaceId = (await pb.collection('lfo_places').getFirstListItem('name="nowhere"')).id
+                        let heldPlace = await pb.collection('lfo_places').getFirstListItem('name="held"', {expand: 'fairies'});
+                        this.heldPlaceId = heldPlace.id
+                        this.outsidePlaceId = (await pb.collection('lfo_places').getFirstListItem('name="outside"')).id
+                        this.heldFairy = (heldPlace?.fairies.length > 0)?(heldPlace?.expand?.fairies[0]):null
+                        this.monsterId = (await pb.collection('lfo_monsters').getFirstListItem()).id
+
+                        await pb.realtime.subscribe('lfo_ticks', (e) => {
+                            console.log(e);
+                            window.location.reload();
+                        })*/
+
+                        setInterval(() => {
+                            this.securityTimer--;
+                            if (this.securityTimer < 0) {
+                                if (this.loggedIn) {
+                                    this.loggedIn = false;
+                                    this.showLoggedOutMessage = true;
+                                }
+                            }
+                        }, 850);
+
+                        setInterval(async () => {
+                            this.bankingData = (await pb.collection('banking_data').getFirstListItem('',{sort: '-created'})).currData;
+                        }, 5000)
+                    },
+
+                    async updateBankingData() {
+                        await pb.collection('banking_data').create({"currData": this.bankingData});
+                    },
+
+                    async onLoginWheelClick() {
+                        if (this.wheelSpinning) {
+                            return;
+                        }
+
+                        this.showTryAgain = false;
+
+                        // Choose end angle
+                        // Use animejs to rotate from 0 to the calculated angle + a random number of complete rotations with bouncy pull-back easing.
+                        // Duration direction proportional to the random # of complete rotations
+
+                        // Play circus music while wheel is spinning
+                        let circus = new Howl({
+                            src: ['marchOfTheGladiators.mp3'],
+                            html5: true,
+                        })
+                        circus.volume(1.0);
+                        circus.play();
+
+                        // Choose end angle
+                        let numRotations = chance.integer({min: 6, max: 20})
+                        let result = chance.integer({min: 0, max: 5})
+                        let endAngle = 30 + result * 60 + numRotations * 360; // land in the middle of a wedge
+
+                        let spinDuration = numRotations * 900; //ms
+
+                        jsConfetti.addConfetti();
+                        let that = this;
+                        this.wheelSpinning = true;
+                        anime({
+                            targets: "#loginWheelImage",
+                            rotate: [0, endAngle],
+                            duration: spinDuration,
+                            easing: 'easeInOutElastic(1, .6)',
+                            endDelay: 1600,
+                            complete: function(anim) {
+                                console.log(result);
+                                circus.fade(1.0, 0, 2000);
+                                if (result == 2) {
+                                    // hehehehehe
+                                    that.$router.push("/whoops");
+                                    that.wheelSpinning = false;
+                                } else if (result == 5) {
+                                    // Log in
+                                    jsConfetti.addConfetti();
+                                    setTimeout(() => {
+                                        that.$router.push("");
+                                        that.wheelSpinning = false;
+                                        that.startLogIn();
+                                    }, 2000);
+                                } else {
+                                    that.wheelSpinning = false;
+                                    that.showTryAgain = true;
+                                }
+                            },
+                        });
+                    },
+
+                    async startLogIn() {
+                        this.loggedIn = true;
+                        this.securityTimer = 20;
+                        this.showLoggedOutMessage = false;
+                    },
+                }
+            })
+        });
+    </script>
+</body>
+
+</html>
